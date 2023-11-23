@@ -2,4 +2,4 @@
 
 TaskController taskController = new ();
 
-taskController.main();
+taskController.run();

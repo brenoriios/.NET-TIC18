@@ -3,10 +3,10 @@
 public class Task {
     public string Title { get; set; }
     public string Description { get; set; }
-    public DateOnly ExpirationDate { get; set; }
+    public DateTime ExpirationDate { get; set; }
     public bool Completed { get; set; }
     
-    public Task(string _title, string _description, DateOnly _expirationDate) {
+    public Task(string _title, string _description, DateTime _expirationDate) {
         Title = _title;
         Description = _description;
         ExpirationDate = _expirationDate;
@@ -14,6 +14,6 @@ public class Task {
     }
 
     public string toString() {
-        return $"{Title} ({ExpirationDate}) {(Completed ? "[X]" : "[ ]" )}";
+        return $"{Title} {(Completed ? "[X]" : "[ ]" )}\n{Description}\nAté {ExpirationDate.ToString("dd/MM/yyyy HH:mm")}";
     }
 }

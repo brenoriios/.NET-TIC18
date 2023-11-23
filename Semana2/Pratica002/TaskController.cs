@@ -1,21 +1,24 @@
-﻿using Task = Pratica002.Task;
-namespace Pratica002;
+﻿namespace Pratica002;
+
+using System.Globalization;
 class TaskController {
     List<Task> taskList;
 
     public TaskController(){
-        taskList = new();
-        taskList.Add(new Task("Task 1", "Descrição da Task 1", new DateOnly(2023, 11, 21)));
-        taskList.Add(new Task("Task 2", "Descrição da Task 2", new DateOnly(2023, 11, 21)));
-        taskList.Add(new Task("Task 3", "Descrição da Task 3", new DateOnly(2023, 11, 21)));
+        this.taskList = new();
+
+        taskList.Add(new Task("Task 1", "Descrição da Task 1", new DateTime(2024, 11, 21, 13, 0, 0)));
+        taskList.Add(new Task("Task 2", "Descrição da Task 2", new DateTime(2023, 11, 21, 23, 59, 0)));
+        taskList.Add(new Task("Task 3", "Descrição da Task 3", new DateTime(2023, 11, 21, 8, 0, 0)));
     }
+
     public void createTask(){
         Console.WriteLine($"Inserir Nova Tarefa:");
         Console.WriteLine($"Digite o título da nova tarefa: ");
         string? title = Console.ReadLine();
         Console.WriteLine($"Digite a descrição da nova tarefa: ");
         string? description = Console.ReadLine();
-        Console.WriteLine($"Digite a data de expiração da nova tarefa (dd/mm/yyyy): ");
+        Console.WriteLine($"Digite a data de expiração da nova tarefa (dd/mm/yyyy HH:mm):");
         string? dateInput = Console.ReadLine();
 
         if(string.IsNullOrEmpty(title) || string.IsNullOrEmpty(description) || string.IsNullOrEmpty(dateInput)){
@@ -23,13 +26,9 @@ class TaskController {
             return;
         }
 
-        string[] dateParams = dateInput.Split('/');
-        Array.Reverse(dateParams);
-        dateInput = string.Join('-', dateParams);
-
-        DateOnly date;
+        DateTime date;
         try {
-            date = DateOnly.Parse(dateInput);
+            date = DateTime.ParseExact(dateInput, "d/M/yyyy H:m", CultureInfo.InvariantCulture);
         } catch {
             Console.WriteLine($"Data Inválida!");        
             return;
@@ -51,6 +50,43 @@ class TaskController {
         taskList.ElementAt(index.Value).Completed = true;
     }
 
+    public void editTask(){
+        Console.WriteLine($"Editar Tarefa:");        
+        int? index = findTask();
+
+        if(index == null){
+            return;
+        }
+
+        Task task = this.taskList.ElementAt(index.Value);
+
+        Console.WriteLine($"Digite o novo título da tarefa: ");
+        string? title = Console.ReadLine();
+        Console.WriteLine($"Digite a nova descrição tarefa: ");
+        string? description = Console.ReadLine();
+        Console.WriteLine($"Digite a nova data de expiração da tarefa (dd/mm/yyyy hh:mm): (Deixe em branco se não quiser editar)");
+        string? dateInput = Console.ReadLine();
+        
+        if(!string.IsNullOrEmpty(title)){
+            task.Title = title;
+        }
+
+        if(!string.IsNullOrEmpty(description)){
+            task.Description = description;
+        }
+
+        DateTime date;
+        if(!string.IsNullOrEmpty(dateInput)){    
+            try {
+                date = DateTime.ParseExact(dateInput, "d/M/yyyy H:m", CultureInfo.InvariantCulture);
+                task.ExpirationDate = date;
+            } catch {
+                Console.WriteLine($"Data Inválida!");      
+                return;
+            }
+        }
+    }
+
     public void deleteTask(){
         Console.WriteLine($"Excluir Tarefa:");
         int? index = findTask();
@@ -67,6 +103,7 @@ class TaskController {
         for(int i = 0; i < taskList.Count; i++){
             Task task = taskList[i];
             Console.WriteLine($"{i + 1}. {task.toString()}");
+            Console.WriteLine($"--------------------------");
         }
     }
 
@@ -137,8 +174,58 @@ class TaskController {
         listTasks(filteredTasks);
     }
 
-    public void main(){
+    void sortAndShowTasks(bool desc = false){
+        List<Task> sortedTaskList;
+
+        sortedTaskList = this.taskList.OrderBy(task => task.ExpirationDate).ToList();
+
+        if(desc){
+            sortedTaskList = this.taskList.OrderByDescending(task => task.ExpirationDate).ToList();
+        }
+
+        this.listTasks(sortedTaskList);
+    }
+
+    void showStatistics(){
+        List<Task> sortedTaskList = this.taskList.OrderBy(task => task.ExpirationDate).ToList();
+        int pendingTasks = 0, completedTasks = 0;
+
+        foreach(Task task in this.taskList){
+            if(task.Completed){
+                completedTasks++;
+            } else {
+                pendingTasks++;
+            }
+        }
+
+        Console.WriteLine($"{completedTasks} tarefas concluídas.");
+        Console.WriteLine($"{pendingTasks} tarefas pendentes.");
+        Console.WriteLine($"--------------------------");        
+        Console.WriteLine($"Última tarefa a vencer:\n{sortedTaskList.Last().toString()}");
+        Console.WriteLine($"--------------------------");        
+        Console.WriteLine($"Primeira tarefa a vencer:\n{sortedTaskList.First().toString()}");
+    }
+
+    public void showMenu(){
+        Console.WriteLine($"----------Menu----------");
+        Console.WriteLine($"1. Inserir Tarefa");
+        Console.WriteLine($"2. Marcar Tarefa como Concluída");
+        Console.WriteLine($"3. Editar Tarefa");
+        Console.WriteLine($"4. Excluir Tarefa");
+        Console.WriteLine($"5. Listar Tarefas");
+        Console.WriteLine($"6. Listar Tarefas Concluídas");
+        Console.WriteLine($"7. Listar Tarefas Pendentes");
+        Console.WriteLine($"8. Buscar Tarefa");
+        Console.WriteLine($"9. Listar Tarefas (mais antigas -> mais recentes)");
+        Console.WriteLine($"10. Buscar Tarefa (mais recentes -> mais antigas)");
+        Console.WriteLine($"11. Estatísticas de Uso");
+        Console.WriteLine($"0. Sair");
+    }
+
+    public void run(){
         while(true){
+            this.showMenu();
+
             Console.WriteLine($"Digite uma opção");
             string? opInput = Console.ReadLine();
 
@@ -164,23 +251,39 @@ class TaskController {
                     break;
                 }
                 case 3: {
-                    deleteTask();
+                    editTask();
                     break;
                 }
                 case 4: {
-                    listTasks();
+                    deleteTask();
                     break;
                 }
                 case 5: {
-                    listTasks(taskState: true);
+                    listTasks();
                     break;
                 }
                 case 6: {
-                    listTasks(taskState: false);
+                    listTasks(taskState: true);
                     break;
                 }
                 case 7: {
+                    listTasks(taskState: false);
+                    break;
+                }
+                case 8: {
                     listTaskByKeyword();
+                    break;
+                }
+                case 9: {
+                    sortAndShowTasks();
+                    break;
+                }
+                case 10: {
+                    sortAndShowTasks(true);
+                    break;
+                }
+                case 11: {
+                    showStatistics();
                     break;
                 }
                 case 0: {
@@ -195,6 +298,9 @@ class TaskController {
             if(op == 0){
                 break;
             }
+
+            Console.WriteLine($"Pressione uma tecla para continuar...");
+            Console.ReadLine();
         }
     }
 }
